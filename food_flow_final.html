@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Food Flow — เกมจัดเรียงอาหาร</title>
+<style>
+:root{--navy:#123b68;--blue:#2377c9;--sky:#dff3ff;--ice:#f4fbff;--cyan:#77d5f5;--white:#fff;--gold:#ffcf68;--green:#16865b;--red:#c34256}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--navy);background:linear-gradient(145deg,#e6f7ff,#cbeaff 48%,#f7fcff);min-height:100vh}
+header{padding:24px 16px 18px;text-align:center;background:linear-gradient(120deg,#14569a,#2298d1);color:white;box-shadow:0 5px 20px #164b7730}
+header h1{margin:0;font-size:clamp(1.7rem,4vw,2.5rem)}header p{margin:6px 0 0;color:#e5f8ff}
+main{max-width:1050px;margin:20px auto;padding:0 14px 36px;display:grid;gap:16px}
+.panel{background:#ffffffdc;border:1px solid #b8e4fa;border-radius:20px;padding:18px;box-shadow:0 8px 22px #1d65941a}
+.topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.pill{background:#e2f5ff;border:1px solid #b5e5fb;border-radius:999px;padding:7px 12px;font-weight:700}
+h2{margin:0 0 12px;font-size:1.15rem}.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+label{display:grid;gap:5px;font-weight:700;font-size:.92rem}select,button{font:inherit;border-radius:12px;border:1px solid #a7d9f2;padding:10px 13px}
+select{background:white;color:var(--navy)}button{cursor:pointer;font-weight:750;transition:.15s}button:hover{transform:translateY(-1px);filter:brightness(.98)}button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.primary{background:#187ac1;color:white;border-color:#187ac1}.secondary{background:#e7f7ff;color:#14558b}.warning{background:#fff1d0;color:#78551a;border-color:#f2d28b}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:14px}.stat{background:#f0faff;border-radius:14px;padding:11px;text-align:center}.stat small{display:block;color:#547d9b}.stat strong{font-size:1.25rem}
+.foods{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:20px 6px;min-height:125px}
+.food{width:95px;min-height:92px;border:2px solid #c2e8fb;border-radius:16px;background:linear-gradient(#fff,#eaf8ff);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;user-select:none;box-shadow:0 4px 0 #b5dff4}
+.food .emoji{font-size:2.1rem;line-height:1.1}.food .name{font-size:.83rem;font-weight:750}.food .weight{font-size:.75rem;color:#49738f}
+.food.selected{border-color:#167ac0;background:#d8f2ff;box-shadow:0 0 0 3px #54bdf766,0 4px 0 #7ec7e8;transform:translateY(-3px)}
+.food.completed{border-color:#1c9a63;background:linear-gradient(#e4fff0,#bff3d5);color:#12633f;box-shadow:0 0 0 2px #61d69a66,0 4px 0 #8edbb1}
+.food.completed .weight{color:#287650}
+.food.completed .name{color:#12633f}
+.food.locked{opacity:1;cursor:not-allowed}
+.status{background:#f1faff;border-left:4px solid #43a7df;border-radius:9px;padding:11px 13px;min-height:45px}
+.rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rule{padding:13px;border-radius:14px;background:#f0faff;border:1px solid #d0edfc}.rule h3{margin:0 0 5px;font-size:1rem}.rule p{margin:0;font-size:.9rem;line-height:1.5}
+.log{font-size:.9rem;line-height:1.7;max-height:130px;overflow:auto;background:#f5fbff;border-radius:12px;padding:10px 14px}
+footer{text-align:center;color:#4d7795;font-size:.85rem;padding:0 12px 24px}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.food{width:78px;min-height:84px}.food .emoji{font-size:1.8rem}.rules{grid-template-columns:1fr}.panel{padding:14px}}
+
+/* Completed/sorted food positions remain fully vivid and clearly green. */
+.food.completed {
+  opacity: 1 !important;
+  filter: none !important;
+  border: 3px solid #15803d !important;
+  background: #bbf7d0 !important;
+  color: #14532d !important;
+  box-shadow: 0 0 0 2px rgba(21,128,61,.18) !important;
+}
+.food.completed .emoji,
+.food.completed .name,
+.food.completed .weight {
+  opacity: 1 !important;
+  color: #14532d !important;
+}
+
+</style>
+</head>
+<body>
+<header><h1>Food Flow</h1><p>เกมจัดเรียงอาหาร • เรียนรู้ Sorting Algorithm</p></header>
+<main>
+<section class="panel">
+ <div class="topbar"><div><h2>🎮 สนามจัดเรียงอาหาร</h2><div id="roundLabel" class="pill">ผู้เล่น 1 • ด่าน 1/6</div></div><div class="pill" id="turnLabel">ถึงตาผู้เล่น 1</div></div>
+ <div class="controls" style="margin-top:14px">
+  <label>ผู้เล่น<select id="player"><option value="1">ผู้เล่น 1</option><option value="2">ผู้เล่น 2</option></select></label>
+  <label>ด่าน<select id="level"><option value="1">ด่าน 1</option><option value="2">ด่าน 2</option><option value="3">ด่าน 3</option><option value="4">ด่าน 4</option><option value="5">ด่าน 5</option><option value="6">ด่าน 6</option></select></label>
+  <label>อัลกอริทึม<select id="algorithm"><option value="bubble">Bubble Sort</option><option value="selection">Selection Sort</option></select></label>
+  <button id="start" class="primary">เริ่ม / สุ่มอาหารใหม่</button>
+  <button id="reset" class="secondary">รีเซ็ตด่าน</button>
+ </div>
+ <div class="stats">
+  <div class="stat"><small>เวลาเหลือ</small><strong id="timer">90s</strong></div>
+  <div class="stat"><small>คะแนนด่านนี้</small><strong id="score">0</strong></div>
+  <div class="stat"><small>การคลิก</small><strong id="moves">0</strong></div>
+  <div class="stat"><small>คะแนนรวม P1 / P2</small><strong id="totals">0 / 0</strong></div>
+ </div>
+ <h2 style="margin-top:18px">เรียงน้ำหนักอาหารจากน้อย → มาก</h2>
+ <div id="foods" class="foods" aria-label="อาหารที่ต้องจัดเรียง"></div>
+ <div class="controls" style="justify-content:center">
+  <button id="next" class="primary" disabled>ด่านถัดไป →</button>
+  <button id="finish" class="warning">จบเทิร์นผู้เล่นนี้</button>
+ </div>
+ <p id="message" class="status" role="status">กด “เริ่ม / สุ่มอาหารใหม่” เพื่อเริ่มเล่น จากนั้นคลิกอาหาร 2 ชิ้นเพื่อสลับตำแหน่ง</p>
+</section>
+<section class="panel">
+ <h2>📘 กติกาและวิธีเล่น</h2>
+ <div class="rules">
+  <div class="rule"><h3>🫧 Bubble Sort ทำงานอย่างไร?</h3><p>เลือกอาหาร 2 ชิ้นที่อยู่ติดกันเพื่อเปรียบเทียบน้ำหนัก ถ้าชิ้นซ้ายหนักกว่าชิ้นขวา จึงสลับตำแหน่งกันได้ ถ้าเรียงถูกอยู่แล้วจะสลับไม่ได้ ทำซ้ำไปเรื่อย ๆ จนอาหารเรียงจากน้ำหนักน้อยไปมาก</p><p><b>จำง่าย ๆ:</b> เปรียบเทียบคู่ที่ติดกัน → สลับเมื่อซ้ายหนักกว่า → ทำซ้ำจนเรียงครบ</p></div>
+  <div class="rule"><h3>🔎 Selection Sort ทำงานอย่างไร?</h3><p>แต่ละรอบ ผู้เล่นค้นหาอาหารที่มีน้ำหนักน้อยที่สุดในส่วนที่ยังไม่เรียง แล้วคลิกอาหารชิ้นนั้น จากนั้นคลิกช่องซ้ายสุดของส่วนที่ยังไม่เรียงอีกครั้ง เพื่อสลับตำแหน่งด้วยตัวเอง แล้วจึงทำช่องถัดไป</p></div>
+ </div>
+ <p style="margin-bottom:6px"><b>รูปแบบการแข่งขัน:</b> ผู้เล่น 1 เล่นด่าน 1–6 ให้ครบก่อน จากนั้นผู้เล่น 2 เล่นด่าน 1–6 คะแนนรวมสูงกว่าจะเป็นผู้ชนะ</p>
+ <p style="margin-top:0">คะแนน: ผ่านด่านได้ 100 คะแนน + โบนัสเวลาที่เหลือ • เลือกสลับผิดตามกติกาอัลกอริทึมจะไม่ได้สลับและมีคำเตือน</p>
+ <h2 style="margin-top:18px">🧾 บันทึกการเล่น</h2><div id="log" class="log">เริ่มเกมเพื่อดูบันทึกการเล่น</div>
+</section>
+</main>
+<footer>Food Flow • เรียนรู้แนวคิด Sorting Algorithm ผ่านการเล่น</footer>
+<script>
+const foodsData=[
+ {name:"กล้วย",emoji:"🍌",w:1},{name:"องุ่น",emoji:"🍇",w:2},{name:"เชอร์รี",emoji:"🍒",w:3},
+ {name:"สตรอว์เบอร์รี",emoji:"🍓",w:4},{name:"เลมอน",emoji:"🍋",w:5},{name:"แอปเปิล",emoji:"🍎",w:6},
+ {name:"ลูกแพร์",emoji:"🍐",w:7},{name:"ส้ม",emoji:"🍊",w:8},{name:"แตงโม",emoji:"🍉",w:9},{name:"สับปะรด",emoji:"🍍",w:10}
+];
+const $=id=>document.getElementById(id);
+let player=1,level=1,algorithm="bubble",arr=[],selected=null,sortedBoundary=0,moves=0,seconds=90,timerId=null,active=false,done=false;
+let scores=[0,0],levelScores=[[0,0,0,0,0,0],[0,0,0,0,0,0]],logs=[];
+function levelCount(){return Math.min(4+level,10)}
+function say(t){$("message").textContent=t}
+function record(t){logs.unshift(t);$("log").innerHTML=logs.slice(0,8).map(x=>"• "+x).join("<br>")}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function stopTimer(){if(timerId){clearInterval(timerId);timerId=null}}
+function updateStats(){$("timer").textContent=seconds+"s";$("score").textContent=levelScores[player-1][level-1];$("moves").textContent=moves;$("totals").textContent=scores[0]+" / "+scores[1];$("roundLabel").textContent=`ผู้เล่น ${player} • ด่าน ${level}/6`;$("turnLabel").textContent=`ถึงตาผู้เล่น ${player}`;$("player").value=player;$("level").value=level;$("algorithm").value=algorithm}
+function isSorted(){return arr.every((x,i)=>i===0||arr[i-1].w<=x.w)}
+function startGame(){stopTimer();player=+$("player").value;level=+$("level").value;algorithm=$("algorithm").value;arr=shuffle(foodsData.slice(0,levelCount()).map(x=>({...x})));if(isSorted())arr.reverse();selected=null;sortedBoundary=0;moves=0;seconds=Math.max(60,120-level*10);active=true;done=false;$("next").disabled=true;render();say(algorithm==="bubble"?"Bubble Sort: คลิกอาหารที่อยู่ติดกัน 2 ชิ้นเพื่อสลับได้เฉพาะเมื่อซ้ายหนักกว่าขวา":"Selection Sort: หาอาหารที่เบาที่สุดในส่วนที่ยังไม่เรียง แล้วคลิกอาหารชิ้นนั้น ระบบจะย้ายไปช่องซ้ายสุดที่ยังไม่เรียงให้อัตโนมัติ");record(`ผู้เล่น ${player} เริ่มด่าน ${level} (${algorithm==="bubble"?"Bubble Sort":"Selection Sort"})`);updateStats();timerId=setInterval(()=>{if(!active)return;seconds--;updateStats();if(seconds<=0){stopTimer();active=false;say("หมดเวลา! กดรีเซ็ตด่านเพื่อเริ่มใหม่ หรือจบเทิร์นเพื่อไปต่อ");record(`ผู้เล่น ${player} หมดเวลาในด่าน ${level}`)}},1000)}
+function render(){$("foods").innerHTML="";const complete=isSorted();const sortedWeights=arr.map(f=>f.w).slice().sort((a,b)=>a-b);arr.forEach((f,i)=>{let el=document.createElement("button");const positionCorrect=algorithm==="selection"?i<sortedBoundary:(f.w===sortedWeights[i]);el.className="food"+(selected===i?" selected":"")+(positionCorrect||complete?" completed":"")+(algorithm==="selection"&&i<sortedBoundary?" locked":"");el.innerHTML=`<span class="emoji">${f.emoji}</span><span class="name">${f.name}</span><span class="weight">น้ำหนัก ${f.w}</span>`;el.disabled=!active||(algorithm==="selection"&&i<sortedBoundary);el.onclick=()=>pick(i);$("foods").appendChild(el)});updateStats()}
+function pick(i){if(!active||done)return;
+ if(algorithm==="selection"){
+  if(i<sortedBoundary)return;
+  if(selected===null){
+   let minVal=arr[sortedBoundary].w,minIdx=sortedBoundary;
+   for(let j=sortedBoundary;j<arr.length;j++){if(arr[j].w<minVal){minVal=arr[j].w;minIdx=j;}}
+   if(i!==minIdx){
+    say(`⚠️ ยังไม่ใช่ชิ้นที่เบาที่สุด! ค่าต่ำสุดในส่วนที่เหลือคือ ${arr[minIdx].name} (น้ำหนัก ${minVal})`);
+    return;
+   }
+   // ถ้าชิ้นที่เบาที่สุดอยู่ช่องเป้าหมายอยู่แล้ว ให้ยืนยันตำแหน่งด้วยคลิกเดียว
+   if(i===sortedBoundary){
+    sortedBoundary++;
+    selected=null;
+    record(`Selection Sort: ยืนยันว่า ${arr[i].name} อยู่ตำแหน่งถูกต้องแล้ว`);
+    render();
+    if(isSorted()){winLevel()}else{say(`ถูกต้อง! ${arr[i].name} อยู่ตำแหน่งที่ ${sortedBoundary} แล้ว ไปหาชิ้นที่เบาที่สุดในส่วนที่เหลือต่อ`);}
+    return;
+   }
+   selected=i;render();
+   say(`เลือก ${arr[i].name} ถูกต้องแล้ว! คลิกช่องเป้าหมายที่ ${sortedBoundary+1} เพื่อสลับตำแหน่ง`);
+   return;
+  }
+  let a=selected,b=i;
+  if(a===b){selected=null;render();say("ยกเลิกการเลือกแล้ว");return}
+  if(b!==sortedBoundary){
+   selected=null;render();
+   say(`⚠️ ต้องย้ายชิ้นที่เบาที่สุดไปยังช่องที่ ${sortedBoundary+1} ก่อน`);
+   return;
+  }
+  [arr[a],arr[b]]=[arr[b],arr[a]];
+  selected=null;moves++;sortedBoundary++;
+  record(`Selection Sort: สลับ ${arr[b].name} ไปยังช่องที่ ${b+1}`);
+  render();
+  if(isSorted()){winLevel()}else{say(`ถูกต้อง! ช่อง ${sortedBoundary} เรียบร้อยแล้ว ค้นหาชิ้นที่เบาที่สุดในส่วนที่เหลือต่อไป`);}
+  return;
+ }
+ if(selected===null){selected=i;render();say("เลือกชิ้นแรกแล้ว เลือกชิ้นที่อยู่ติดกันเพื่อพิจารณาการสลับ");return}
+ let a=selected,b=i;selected=null;if(a===b){render();return}
+ if(algorithm==="bubble"){
+  if(Math.abs(a-b)!==1){render();say("⚠️ Bubble Sort เปรียบเทียบได้เฉพาะอาหารที่อยู่ติดกัน กรุณาเลือกคู่ที่ติดกัน");return}
+  let left=Math.min(a,b),right=Math.max(a,b);
+  if(arr[left].w<=arr[right].w){render();say("⚠️ คู่นี้เรียงถูกอยู่แล้ว Bubble Sort จะสลับได้เมื่อชิ้นซ้ายหนักกว่าชิ้นขวา");return}
+  [arr[left],arr[right]]=[arr[right],arr[left]];moves++;record("Bubble Sort: สลับอาหารที่อยู่ติดกัน");
+ }
+ selected=null;
+ render();
+ if(isSorted()){winLevel()}else{say("ดีมาก! เลือกคู่ที่อยู่ติดกันและเรียงจากน้ำหนักน้อยไปมากต่อไป")}
+}
+function winLevel(){if(done)return;done=true;active=false;stopTimer();let points=100+seconds;levelScores[player-1][level-1]=points;scores[player-1]+=points;$("next").disabled=false;render();say(`🎉 ผ่านด่าน ${level}! ได้ ${points} คะแนน (โบนัสเวลาที่เหลือ ${seconds})`);record(`ผู้เล่น ${player} ผ่านด่าน ${level}: +${points} คะแนน`);updateStats()}
+function resetLevel(){startGame()}
+function nextLevel(){if(!done)return;if(level<6){level++;$("level").value=level;startGame()}else{finishPlayer()}}
+function finishPlayer(){stopTimer();active=false;selected=null;if(player===1){player=2;level=1;say("ผู้เล่น 1 เล่นครบแล้ว! ต่อไปเป็นรอบของผู้เล่น 2 เริ่มจากด่าน 1");record("ผู้เล่น 1 จบครบ 6 ด่าน");startGame()}else{done=true;let winner=scores[0]===scores[1]?"เสมอกัน":scores[0]>scores[1]?"ผู้เล่น 1 ชนะ":"ผู้เล่น 2 ชนะ";say(`🏆 จบการแข่งขัน! ${winner} — คะแนนรวม ${scores[0]} ต่อ ${scores[1]} กดเริ่มเพื่อเล่นใหม่`);record(`จบเกม: ${winner} (${scores[0]} : ${scores[1]})`);$("next").disabled=true;updateStats()}}
+$("start").onclick=startGame;$("reset").onclick=resetLevel;$("next").onclick=nextLevel;$("finish").onclick=finishPlayer;
+$("player").onchange=()=>{player=+$("player").value;updateStats()};$("level").onchange=()=>{level=+$("level").value;updateStats()};$("algorithm").onchange=()=>{algorithm=$("algorithm").value};
+updateStats();
+</script>
+</body>
+</html>
